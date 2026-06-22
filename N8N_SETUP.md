@@ -21,7 +21,7 @@ Flujo actual: `Webhook (POST)` → `Message a model` (IA) → `Code in JavaScrip
 
 1. Abrí el nodo **Webhook** → copiá la **Production URL** → pegala en el campo "Crear tarea" del frontend.
 2. En el mismo nodo, parámetro **Respond** → poné `When Last Node Finishes`, para que el webhook devuelva la fila recién creada.
-3. El frontend manda: `POST { "text": "<descripción libre>" }`.
+3. El frontend manda: `POST { "tarea": "<descripción libre>" }`.
 4. Revisá el prompt del nodo **Message a model**: tiene que devolver SOLO un JSON con `title`, `description`, `status` (default `pendiente`), `priority`.
 5. En **Code in JavaScript**, generá un `id` único y completá defaults, por ejemplo:
    ```js

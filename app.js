@@ -76,7 +76,7 @@ async function createTask(text) {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ tarea: text }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     await loadTasks();
