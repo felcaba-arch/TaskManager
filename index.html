@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskManager</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>TaskManager</h1>
+  <button id="settings-toggle" title="Configuración" aria-label="Configuración">⚙️</button>
+</header>
+
+<section id="settings-panel" class="hidden">
+  <h2>Configuración de webhooks (n8n)</h2>
+  <label>
+    Crear tarea
+    <input type="url" id="url-crear" placeholder="https://tu-n8n/webhook/crear-tarea">
+  </label>
+  <label>
+    Listar tareas
+    <input type="url" id="url-listar" placeholder="https://tu-n8n/webhook/listar-tareas">
+  </label>
+  <label>
+    Gestionar tarea (editar/borrar)
+    <input type="url" id="url-gestionar" placeholder="https://tu-n8n/webhook/gestionar-tareas">
+  </label>
+  <button id="save-settings">Guardar</button>
+</section>
+
+<main>
+  <form id="new-task-form">
+    <textarea id="new-task-text" placeholder="Describí la tarea, ej: 'Comprar materiales para el viernes, prioridad alta'" rows="2" required></textarea>
+    <button type="submit">Agregar</button>
+  </form>
+
+  <div id="status-message" class="hidden"></div>
+
+  <div id="task-list-header">
+    <h2>Tareas</h2>
+    <button id="refresh-tasks">Actualizar</button>
+  </div>
+
+  <ul id="task-list"></ul>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
