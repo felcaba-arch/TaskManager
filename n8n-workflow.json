@@ -1,0 +1,300 @@
+{
+  "name": "Tareas - Workflow Completo",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ebfea8a0-4105-41fe-ab17-9668abf4935d",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-112, -3088],
+      "id": "79e06e4e-f442-43ad-b8c7-94ef2211cc22",
+      "name": "Webhook - Crear",
+      "webhookId": "ebfea8a0-4105-41fe-ab17-9668abf4935d"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-NANO"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Sos un asistente que estructura tareas. El usuario te manda una descripción en lenguaje natural.\n\nDescripción: {{ $json.body.tarea }}\n\nRespondé ÚNICAMENTE con un JSON válido, sin texto adicional y sin markdown, con este formato exacto:\n{\n  \"TAREA\": \"título corto de la tarea\",\n  \"ESTADO\": \"Pendiente\",\n  \"PRIORIDAD\": \"Baja, Media o Alta según corresponda\",\n  \"CATEGORIA\": \"una categoría breve, o cadena vacía si no aplica\",\n  \"FECHA_LIMITE\": \"fecha en formato YYYY-MM-DD si se menciona, o cadena vacía\",\n  \"NOTAS\": \"notas adicionales, o cadena vacía\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [272, -3008],
+      "id": "f2443adb-c3b4-4400-ab20-2c9a74de0dc7",
+      "name": "IA - Estructurar Tarea",
+      "credentials": {
+        "openAiApi": { "id": "p12vtiJWQSXe34o8", "name": "OpenAI account" }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $input.item.json;\nlet texto = '';\nif (raw.text) {\n  texto = raw.text;\n} else if (raw.output?.[0]?.content?.[0]?.text) {\n  texto = raw.output[0].content[0].text;\n}\nconst limpio = texto.replace(/```json|```/g, '').trim();\nconst d = JSON.parse(limpio);\n\nreturn { json: {\n  col_2: d.TAREA || '',\n  col_3: d.ESTADO || '',\n  col_4: d.PRIORIDAD || '',\n  col_5: d.CATEGORIA || '',\n  col_6: d.FECHA_LIMITE || '',\n  col_7: d.NOTAS || ''\n}};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [784, -3008],
+      "id": "90b257df-dc93-461d-b653-6752a7657462",
+      "name": "Code - Mapear Columnas"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1aguviMo8BQYz5f0T5uvaJsf-sD3-SpDODu50sIvXFcs",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 101773751,
+          "mode": "list",
+          "cachedResultName": "TAREAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aguviMo8BQYz5f0T5uvaJsf-sD3-SpDODu50sIvXFcs/edit#gid=101773751"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [992, -3024],
+      "id": "e45c18f4-47a1-4af4-93f9-b13499007fcf",
+      "name": "Guardar en Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "2kaxNOmBt7gnvezh", "name": "Google Sheets account" }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "listar-tareas",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-112, -2700],
+      "id": "b1a2c3d4-1111-4aaa-9bbb-100000000001",
+      "name": "Webhook - Listar",
+      "webhookId": "c2222222-2222-4222-8222-222222222222"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aguviMo8BQYz5f0T5uvaJsf-sD3-SpDODu50sIvXFcs",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 101773751,
+          "mode": "list",
+          "cachedResultName": "TAREAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aguviMo8BQYz5f0T5uvaJsf-sD3-SpDODu50sIvXFcs/edit#gid=101773751"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [272, -2700],
+      "id": "b1a2c3d4-1111-4aaa-9bbb-100000000002",
+      "name": "Leer Filas",
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "2kaxNOmBt7gnvezh", "name": "Google Sheets account" }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nreturn items\n  .map(item => item.json)\n  .filter(row => (row.col_3 || '').trim().toLowerCase() !== 'eliminada')\n  .map(row => ({\n    json: {\n      id: row.row_number,\n      tarea: row.col_2 || '',\n      estado: row.col_3 || '',\n      prioridad: row.col_4 || '',\n      categoria: row.col_5 || '',\n      fecha_limite: row.col_6 || '',\n      notas: row.col_7 || ''\n    }\n  }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [592, -2700],
+      "id": "b1a2c3d4-1111-4aaa-9bbb-100000000003",
+      "name": "Code - Formatear Lista"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gestionar-tareas",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-112, -2300],
+      "id": "b1a2c3d4-1111-4aaa-9bbb-100000000004",
+      "name": "Webhook - Gestionar",
+      "webhookId": "c3333333-3333-4333-8333-333333333333"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "d1111111-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "delete",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [272, -2300],
+      "id": "b1a2c3d4-1111-4aaa-9bbb-100000000005",
+      "name": "If - Accion"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1aguviMo8BQYz5f0T5uvaJsf-sD3-SpDODu50sIvXFcs",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 101773751,
+          "mode": "list",
+          "cachedResultName": "TAREAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aguviMo8BQYz5f0T5uvaJsf-sD3-SpDODu50sIvXFcs/edit#gid=101773751"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["row_number"],
+          "value": {
+            "row_number": "={{ $json.body.id }}",
+            "col_3": "Eliminada"
+          },
+          "schema": [
+            { "id": "row_number", "displayName": "row_number", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true, "removed": false },
+            { "id": "col_3", "displayName": "col_3", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true, "removed": false }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [592, -2200],
+      "id": "b1a2c3d4-1111-4aaa-9bbb-100000000006",
+      "name": "Marcar como Eliminada",
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "2kaxNOmBt7gnvezh", "name": "Google Sheets account" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1aguviMo8BQYz5f0T5uvaJsf-sD3-SpDODu50sIvXFcs",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 101773751,
+          "mode": "list",
+          "cachedResultName": "TAREAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aguviMo8BQYz5f0T5uvaJsf-sD3-SpDODu50sIvXFcs/edit#gid=101773751"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["row_number"],
+          "value": {
+            "row_number": "={{ $json.body.id }}",
+            "col_2": "={{ $json.body.tarea }}",
+            "col_3": "={{ $json.body.estado }}",
+            "col_4": "={{ $json.body.prioridad }}",
+            "col_5": "={{ $json.body.categoria }}",
+            "col_6": "={{ $json.body.fecha_limite }}",
+            "col_7": "={{ $json.body.notas }}"
+          },
+          "schema": [
+            { "id": "row_number", "displayName": "row_number", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true, "removed": false },
+            { "id": "col_2", "displayName": "col_2", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true, "removed": false },
+            { "id": "col_3", "displayName": "col_3", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true, "removed": false },
+            { "id": "col_4", "displayName": "col_4", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true, "removed": false },
+            { "id": "col_5", "displayName": "col_5", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true, "removed": false },
+            { "id": "col_6", "displayName": "col_6", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true, "removed": false },
+            { "id": "col_7", "displayName": "col_7", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true, "removed": false }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [592, -2400],
+      "id": "b1a2c3d4-1111-4aaa-9bbb-100000000007",
+      "name": "Actualizar Fila",
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "2kaxNOmBt7gnvezh", "name": "Google Sheets account" }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Crear": {
+      "main": [[{ "node": "IA - Estructurar Tarea", "type": "main", "index": 0 }]]
+    },
+    "IA - Estructurar Tarea": {
+      "main": [[{ "node": "Code - Mapear Columnas", "type": "main", "index": 0 }]]
+    },
+    "Code - Mapear Columnas": {
+      "main": [[{ "node": "Guardar en Sheet", "type": "main", "index": 0 }]]
+    },
+    "Webhook - Listar": {
+      "main": [[{ "node": "Leer Filas", "type": "main", "index": 0 }]]
+    },
+    "Leer Filas": {
+      "main": [[{ "node": "Code - Formatear Lista", "type": "main", "index": 0 }]]
+    },
+    "Webhook - Gestionar": {
+      "main": [[{ "node": "If - Accion", "type": "main", "index": 0 }]]
+    },
+    "If - Accion": {
+      "main": [
+        [{ "node": "Marcar como Eliminada", "type": "main", "index": 0 }],
+        [{ "node": "Actualizar Fila", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  }
+}

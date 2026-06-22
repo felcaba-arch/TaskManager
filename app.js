@@ -4,8 +4,8 @@ const STORAGE_KEYS = {
   gestionar: 'tm_webhook_gestionar',
 };
 
-const STATUS_OPTIONS = ['pendiente', 'en_progreso', 'completada'];
-const PRIORITY_OPTIONS = ['baja', 'media', 'alta'];
+const ESTADO_OPTIONS = ['Pendiente', 'En progreso', 'Completada'];
+const PRIORIDAD_OPTIONS = ['Baja', 'Media', 'Alta'];
 
 function getUrl(key) {
   return localStorage.getItem(STORAGE_KEYS[key]) || '';
@@ -13,6 +13,14 @@ function getUrl(key) {
 
 function setUrl(key, value) {
   localStorage.setItem(STORAGE_KEYS[key], value);
+}
+
+function slug(str) {
+  return (str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, '_');
 }
 
 function showStatus(text, type) {
@@ -126,13 +134,16 @@ function buildTaskCard(task) {
   const top = document.createElement('div');
   top.className = 'task-card-top';
 
+  const extra = [task.categoria, task.fecha_limite].filter(Boolean).join(' · ');
+
   const info = document.createElement('div');
   info.innerHTML = `
-    <p class="task-title">${escapeHtml(task.title || '(sin título)')}</p>
-    <p class="task-description">${escapeHtml(task.description || '')}</p>
+    <p class="task-title">${escapeHtml(task.tarea || '(sin título)')}</p>
+    <p class="task-description">${escapeHtml(task.notas || '')}</p>
+    ${extra ? `<p class="task-extra">${escapeHtml(extra)}</p>` : ''}
     <div class="badges">
-      <span class="badge status-${task.status}">${escapeHtml(task.status || '')}</span>
-      <span class="badge priority-${task.priority}">${escapeHtml(task.priority || '')}</span>
+      <span class="badge status-${slug(task.estado)}">${escapeHtml(task.estado || '')}</span>
+      <span class="badge priority-${slug(task.prioridad)}">${escapeHtml(task.prioridad || '')}</span>
     </div>
   `;
 
@@ -147,7 +158,7 @@ function buildTaskCard(task) {
   deleteBtn.textContent = 'Borrar';
   deleteBtn.className = 'btn-delete';
   deleteBtn.addEventListener('click', () => {
-    if (confirm(`¿Borrar la tarea "${task.title}"?`)) {
+    if (confirm(`¿Borrar la tarea "${task.tarea}"?`)) {
       manageTask({ action: 'delete', id: task.id });
     }
   });
@@ -172,13 +183,15 @@ function toggleEditForm(li, task) {
   const form = document.createElement('div');
   form.className = 'task-edit-form';
   form.innerHTML = `
-    <input type="text" class="edit-title" value="${escapeHtml(task.title || '')}">
-    <textarea class="edit-description" rows="2">${escapeHtml(task.description || '')}</textarea>
-    <select class="edit-status">
-      ${STATUS_OPTIONS.map(s => `<option value="${s}" ${s === task.status ? 'selected' : ''}>${s}</option>`).join('')}
+    <input type="text" class="edit-tarea" placeholder="Tarea" value="${escapeHtml(task.tarea || '')}">
+    <textarea class="edit-notas" placeholder="Notas" rows="2">${escapeHtml(task.notas || '')}</textarea>
+    <input type="text" class="edit-categoria" placeholder="Categoría" value="${escapeHtml(task.categoria || '')}">
+    <input type="date" class="edit-fecha" value="${escapeHtml(task.fecha_limite || '')}">
+    <select class="edit-estado">
+      ${ESTADO_OPTIONS.map(s => `<option value="${s}" ${s === task.estado ? 'selected' : ''}>${s}</option>`).join('')}
     </select>
-    <select class="edit-priority">
-      ${PRIORITY_OPTIONS.map(p => `<option value="${p}" ${p === task.priority ? 'selected' : ''}>${p}</option>`).join('')}
+    <select class="edit-prioridad">
+      ${PRIORIDAD_OPTIONS.map(p => `<option value="${p}" ${p === task.prioridad ? 'selected' : ''}>${p}</option>`).join('')}
     </select>
     <div class="task-edit-actions">
       <button class="btn-save">Guardar</button>
@@ -191,10 +204,12 @@ function toggleEditForm(li, task) {
     manageTask({
       action: 'update',
       id: task.id,
-      title: form.querySelector('.edit-title').value.trim(),
-      description: form.querySelector('.edit-description').value.trim(),
-      status: form.querySelector('.edit-status').value,
-      priority: form.querySelector('.edit-priority').value,
+      tarea: form.querySelector('.edit-tarea').value.trim(),
+      notas: form.querySelector('.edit-notas').value.trim(),
+      categoria: form.querySelector('.edit-categoria').value.trim(),
+      fecha_limite: form.querySelector('.edit-fecha').value,
+      estado: form.querySelector('.edit-estado').value,
+      prioridad: form.querySelector('.edit-prioridad').value,
     });
   });
 

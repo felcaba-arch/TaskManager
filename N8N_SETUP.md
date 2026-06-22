@@ -1,83 +1,73 @@
 # Configuración de n8n para TaskManager
 
-El frontend (`index.html` + `app.js`) espera 3 webhooks de n8n. Las URLs se configuran
-desde el botón ⚙️ de la app (se guardan en `localStorage` del navegador).
+Todo el backend vive en **un solo workflow** (`n8n-workflow.json`), con 3 webhooks
+independientes en el mismo canvas: Crear, Listar y Gestionar (editar/borrar).
 
-## Esquema de tarea (columnas esperadas en Google Sheets)
+## Esquema real de la hoja "TAREAS"
 
 ```
-id | title | description | status | priority | createdAt
+col_1 (sin usar) | col_2 = TAREA | col_3 = ESTADO | col_4 = PRIORIDAD | col_5 = CATEGORIA | col_6 = FECHA_LIMITE | col_7 = NOTAS
 ```
 
-- `status`: `pendiente` | `en_progreso` | `completada`
-- `priority`: `baja` | `media` | `alta`
+No hay columna de ID: cada tarea se identifica por su **número de fila** (`row_number`),
+que Google Sheets devuelve automáticamente. Por eso no hace falta tocar la hoja.
 
-Si tu hoja tiene otros encabezados, ajustalos en los nodos "Google Sheets" de cada
-workflow, o cambiá `STATUS_OPTIONS`/`PRIORITY_OPTIONS` en `app.js`.
+`ESTADO` esperado: `Pendiente` | `En progreso` | `Completada` (y `Eliminada` para las borradas).
+`PRIORIDAD` esperada: `Baja` | `Media` | `Alta`.
 
-## 1. Listador Tareas - Creador (ya existe)
+**Borrar es un borrado lógico**: en vez de eliminar la fila, se marca `ESTADO = Eliminada`
+y la lista la oculta. Es más seguro (no se pierde nada) y evita errores de desincronización
+de filas en Sheets.
 
-Flujo actual: `Webhook (POST)` → `Message a model` (IA) → `Code in JavaScript` → `Append row in sheet`.
+## Cómo importar el workflow
 
-1. Abrí el nodo **Webhook** → copiá la **Production URL** → pegala en el campo "Crear tarea" del frontend.
-2. En el mismo nodo, parámetro **Respond** → poné `When Last Node Finishes`, para que el webhook devuelva la fila recién creada.
-3. El frontend manda: `POST { "tarea": "<descripción libre>" }`.
-4. Revisá el prompt del nodo **Message a model**: tiene que devolver SOLO un JSON con `title`, `description`, `status` (default `pendiente`), `priority`.
-5. En **Code in JavaScript**, generá un `id` único y completá defaults, por ejemplo:
-   ```js
-   return [{
-     json: {
-       id: Date.now().toString(),
-       title: $json.title,
-       description: $json.description || '',
-       status: $json.status || 'pendiente',
-       priority: $json.priority || 'media',
-       createdAt: new Date().toISOString()
-     }
-   }];
-   ```
-6. Verificá que **Append row in sheet** mapee esas 6 columnas.
+1. Abrí n8n → entrá al workflow **"Listador Tareas - Creador"** actual → desactivalo
+   (toggle "Active"/"Published" a apagado). Esto libera la URL de webhook que ya usa.
+2. Volvé a la lista de workflows → creá uno **nuevo, vacío**.
+3. Dentro del workflow vacío, tocá el menú **"..."** (arriba a la derecha) → **"Import from File"**
+   → seleccioná `n8n-workflow.json`.
+4. Activá/Publicá el workflow importado.
+5. (Opcional) Borrá los workflows viejos "Listador Tareas - Creador" y "Listador Tareas - Lector",
+   ya quedaron reemplazados por este.
 
-## 2. Listador Tareas - Lector (hay que cambiar el trigger)
+La rama "Crear" reutiliza la misma dirección de webhook que ya tenías guardada
+(`http://localhost:5678/webhook/ebfea8a0-4105-41fe-ab17-9668abf4935d`), así que no
+hace falta cambiarla en el frontend.
 
-Hoy arranca con un trigger **manual** ("When clicking 'Execute'"), que no se puede llamar desde afuera. Hay que reemplazarlo:
+## Las 3 URLs para configurar en la web (⚙️ Configuración)
 
-1. Tocá el nodo "When clicking 'Execute'" → eliminalo (o desconectalo).
-2. Agregá un nodo nuevo con `+`: buscá **Webhook** → Method `GET` → Path, por ejemplo `listar-tareas`.
-3. Conectá el Webhook directo a **Get row(s) in sheet**.
-4. En el Webhook, **Respond** → `When Last Node Finishes`.
-5. El nodo **Message a model** (IA) que estaba después queda fuera de esta rama por ahora — la respuesta principal tiene que ser el array de filas tal cual viene de Sheets, para que la lista se pueda renderizar en la app. Si más adelante querés un resumen con IA, lo armamos como un endpoint aparte (ej. `/resumen-tareas`).
-6. Copiá la Production URL al campo "Listar tareas" del frontend.
+1. **Crear tarea**: la que ya tenías.
+2. **Listar tareas**: abrí el nodo **"Webhook - Listar"** → pestaña "Production URL" → copiá.
+3. **Gestionar tarea**: abrí el nodo **"Webhook - Gestionar"** → pestaña "Production URL" → copiá.
 
-## 3. Nuevo workflow: Gestionar Tareas (Update + Delete)
+## Contrato de cada endpoint
 
-Workflow nuevo, un solo webhook para editar y borrar:
+**Crear** — `POST` con:
+```json
+{ "tarea": "descripción libre, ej: comprar materiales para el viernes prioridad alta" }
+```
 
-1. Creá un workflow, nombralo **Gestionar Tareas**.
-2. Nodo **Webhook**: Method `POST`, Path `gestionar-tareas`, **Respond** → `When Last Node Finishes`.
-3. Nodo **If** (o Switch) evaluando `{{$json.body.action}}` (revisá en una ejecución de prueba si el campo llega como `$json.action` o `$json.body.action`):
-   - rama `update`
-   - rama `delete`
-4. Rama **update** → nodo **Google Sheets**, Operation `Update Row`, Matching Column `id` = `{{$json.id}}`, mapeá `title`, `description`, `status`, `priority` desde el body.
-5. Rama **delete** → nodo **Google Sheets**, Operation `Delete Row` (o `Clear`, según la versión del nodo), Matching Column `id` = `{{$json.id}}`.
-6. Publicá/activá el workflow.
-7. Copiá la Production URL al campo "Gestionar tarea" del frontend.
+**Listar** — `GET`, responde:
+```json
+[
+  { "id": 2, "tarea": "...", "estado": "Pendiente", "prioridad": "Alta", "categoria": "...", "fecha_limite": "2026-06-25", "notas": "..." }
+]
+```
+(`id` es el número de fila en la hoja)
 
-### Body que manda el frontend a "Gestionar"
-
+**Gestionar** — `POST` con:
 ```json
 // Actualizar
-{ "action": "update", "id": "...", "title": "...", "description": "...", "status": "...", "priority": "..." }
+{ "action": "update", "id": 2, "tarea": "...", "estado": "...", "prioridad": "...", "categoria": "...", "fecha_limite": "...", "notas": "..." }
 
-// Borrar
-{ "action": "delete", "id": "..." }
+// Borrar (lógico)
+{ "action": "delete", "id": 2 }
 ```
 
 ## Exponer n8n fuera de tu teléfono
 
 Si publicás `index.html` en GitHub Pages, el navegador necesita llegar a tu n8n
-(que corre en `localhost:5678` dentro de Ubuntu/Termux). Para eso, n8n no puede
-ser solo `localhost`: hace falta exponerlo con un túnel, por ejemplo:
+(que corre en `localhost:5678` dentro de Ubuntu/Termux). Para eso hace falta un túnel:
 
 ```bash
 # Cloudflare Tunnel (sin cuenta, para pruebas)
