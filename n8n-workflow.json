@@ -45,7 +45,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const raw = $input.item.json;\nlet texto = '';\nif (raw.text) {\n  texto = raw.text;\n} else if (raw.output?.[0]?.content?.[0]?.text) {\n  texto = raw.output[0].content[0].text;\n}\nconst limpio = texto.replace(/```json|```/g, '').trim();\nconst d = JSON.parse(limpio);\n\nreturn { json: {\n  col_2: d.TAREA || '',\n  col_3: d.ESTADO || '',\n  col_4: d.PRIORIDAD || '',\n  col_5: d.CATEGORIA || '',\n  col_6: d.FECHA_LIMITE || '',\n  col_7: d.NOTAS || ''\n}};"
+        "jsCode": "const raw = $input.item.json;\nlet texto = '';\nif (typeof raw.text === 'string') {\n  texto = raw.text;\n} else if (raw.output?.[0]?.content?.[0]?.text) {\n  texto = raw.output[0].content[0].text;\n}\nconst limpio = texto.replace(/```json|```/g, '').trim();\nconst d = JSON.parse(limpio);\n\nreturn { json: {\n  col_2: d.TAREA || '',\n  col_3: d.ESTADO || '',\n  col_4: d.PRIORIDAD || '',\n  col_5: d.CATEGORIA || '',\n  col_6: d.FECHA_LIMITE || '',\n  col_7: d.NOTAS || ''\n}};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
